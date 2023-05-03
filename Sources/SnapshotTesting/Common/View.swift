@@ -505,7 +505,8 @@ extension UITraitCollection {
         .init(forceTouchCapability: .available),
         .init(layoutDirection: .leftToRight),
         .init(preferredContentSizeCategory: .medium),
-        .init(userInterfaceIdiom: .phone)
+        .init(userInterfaceIdiom: .phone),
+        .init(displayScale: 2.0),
       ]
       switch orientation {
       case .landscape:
@@ -531,7 +532,8 @@ extension UITraitCollection {
         .init(forceTouchCapability: .available),
         .init(layoutDirection: .leftToRight),
         .init(preferredContentSizeCategory: .medium),
-        .init(userInterfaceIdiom: .phone)
+        .init(userInterfaceIdiom: .phone),
+        .init(displayScale: 2.0),
       ]
       switch orientation {
       case .landscape:
@@ -557,7 +559,8 @@ extension UITraitCollection {
         .init(forceTouchCapability: .available),
         .init(layoutDirection: .leftToRight),
         .init(preferredContentSizeCategory: .medium),
-        .init(userInterfaceIdiom: .phone)
+        .init(userInterfaceIdiom: .phone),
+        .init(displayScale: 3.0),
       ]
       switch orientation {
       case .landscape:
@@ -583,7 +586,8 @@ extension UITraitCollection {
         .init(forceTouchCapability: .available),
         .init(layoutDirection: .leftToRight),
         .init(preferredContentSizeCategory: .medium),
-        .init(userInterfaceIdiom: .phone)
+        .init(userInterfaceIdiom: .phone),
+        .init(displayScale: 3.0),
       ]
       switch orientation {
       case .landscape:
@@ -609,7 +613,8 @@ extension UITraitCollection {
         .init(forceTouchCapability: .unavailable),
         .init(layoutDirection: .leftToRight),
         .init(preferredContentSizeCategory: .medium),
-        .init(userInterfaceIdiom: .phone)
+        .init(userInterfaceIdiom: .phone),
+        .init(displayScale: 2.0),
       ]
       switch orientation {
       case .landscape:
@@ -635,7 +640,8 @@ extension UITraitCollection {
         .init(forceTouchCapability: .available),
         .init(layoutDirection: .leftToRight),
         .init(preferredContentSizeCategory: .medium),
-        .init(userInterfaceIdiom: .phone)
+        .init(userInterfaceIdiom: .phone),
+        .init(displayScale: 3.0),
       ]
       switch orientation {
       case .landscape:
@@ -661,7 +667,8 @@ extension UITraitCollection {
       .init(forceTouchCapability: .available),
       .init(layoutDirection: .leftToRight),
       .init(preferredContentSizeCategory: .medium),
-      .init(userInterfaceIdiom: .phone)
+      .init(userInterfaceIdiom: .phone),
+      .init(displayScale: 3.0),
     ]
     switch orientation {
     case .landscape:
@@ -687,7 +694,8 @@ extension UITraitCollection {
       .init(forceTouchCapability: .available),
       .init(layoutDirection: .leftToRight),
       .init(preferredContentSizeCategory: .medium),
-      .init(userInterfaceIdiom: .phone)
+      .init(userInterfaceIdiom: .phone),
+      .init(displayScale: 3.0),
     ]
     switch orientation {
     case .landscape:
@@ -712,7 +720,8 @@ extension UITraitCollection {
       .init(forceTouchCapability: .available),
       .init(layoutDirection: .leftToRight),
       .init(preferredContentSizeCategory: .medium),
-      .init(userInterfaceIdiom: .phone)
+      .init(userInterfaceIdiom: .phone),
+      .init(displayScale: 3.0),
     ]
     switch orientation {
     case .landscape:
@@ -737,7 +746,8 @@ extension UITraitCollection {
       .init(forceTouchCapability: .available),
       .init(layoutDirection: .leftToRight),
       .init(preferredContentSizeCategory: .medium),
-      .init(userInterfaceIdiom: .phone)
+      .init(userInterfaceIdiom: .phone),
+      .init(displayScale: 3.0),
     ]
     switch orientation {
     case .landscape:
@@ -772,10 +782,10 @@ extension UITraitCollection {
 
   private static let iPad = UITraitCollection(
     traitsFrom: [
-//      .init(displayScale: 2),
       .init(horizontalSizeClass: .regular),
       .init(verticalSizeClass: .regular),
-      .init(userInterfaceIdiom: .pad)
+      .init(userInterfaceIdiom: .pad),
+      .init(displayScale: 2.0),
     ]
   )
 
@@ -783,7 +793,8 @@ extension UITraitCollection {
     traitsFrom: [
       .init(horizontalSizeClass: .compact),
       .init(verticalSizeClass: .regular),
-      .init(userInterfaceIdiom: .pad)
+      .init(userInterfaceIdiom: .pad),
+      .init(displayScale: 2.0),
     ]
   )
   #elseif os(tvOS)
