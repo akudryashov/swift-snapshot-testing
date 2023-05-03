@@ -137,7 +137,7 @@ public func _verifyInlineSnapshot<Value>(
           return """
           No reference was found inline. Automatically recorded snapshot.
 
-          Re-run "\(sanitizePathComponent(testName))" to test against the newly-recorded snapshot.
+          Re-run "\(testName)" to test against the newly-recorded snapshot.
           """
         } else {
           /// There is already an failure in this file,

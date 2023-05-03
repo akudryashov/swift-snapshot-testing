@@ -169,10 +169,13 @@ public func verifySnapshot<Value, Format>(
   timeout: TimeInterval = 5,
   file: StaticString = #file,
   testName: String = #function,
-  line: UInt = #line
+  line: UInt = #line,
+  sanitizePath: ((String) -> String)? = nil,
+  fileURLProvider: ((FileURLProviderArgs) -> URL)? = nil
   )
   -> String? {
-
+    var sanitizePathComponent = sanitizePath ?? defaultSanitizePathComponent
+    var currentFileURLProvider = fileURLProvider ?? defaultFileURLProvider
     CleanCounterBetweenTestCases.registerIfNeeded()
     let recording = recording || isRecording
 
@@ -199,9 +202,14 @@ public func verifySnapshot<Value, Format>(
       }
 
       let testName = sanitizePathComponent(testName)
-      let snapshotFileUrl = snapshotDirectoryUrl
-        .appendingPathComponent("\(testName).\(identifier)")
-        .appendingPathExtension(snapshotting.pathExtension ?? "")
+      let snapshotFileUrl = currentFileURLProvider(
+        FileURLProviderArgs(
+          url: snapshotDirectoryUrl,
+          testName: testName,
+          identifier: identifier,
+          pathExtension: snapshotting.pathExtension
+        )
+      )
       let fileManager = FileManager.default
       try fileManager.createDirectory(at: snapshotDirectoryUrl, withIntermediateDirectories: true)
 
@@ -335,10 +343,23 @@ public func verifySnapshot<Value, Format>(
 private let counterQueue = DispatchQueue(label: "co.pointfree.SnapshotTesting.counter")
 private var counterMap: [URL: Int] = [:]
 
-func sanitizePathComponent(_ string: String) -> String {
+func defaultSanitizePathComponent(_ string: String) -> String {
   return string
     .replacingOccurrences(of: "\\W+", with: "-", options: .regularExpression)
     .replacingOccurrences(of: "^-|-$", with: "", options: .regularExpression)
+}
+
+public struct FileURLProviderArgs {
+    public let url: URL
+    public let testName: String
+    public let identifier: String
+    public let pathExtension: String?
+}
+
+func defaultFileURLProvider(_ args: FileURLProviderArgs) -> URL {
+    args.url
+      .appendingPathComponent("\(args.testName).\(args.identifier)")
+      .appendingPathExtension(args.pathExtension ?? "")
 }
 
 // We need to clean counter between tests executions in order to support test-iterations.
