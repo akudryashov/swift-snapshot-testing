@@ -1,4 +1,5 @@
 #if os(iOS) || os(tvOS)
+import Accelerate
 import UIKit
 import XCTest
 
@@ -79,6 +80,53 @@ private let imageContextBitsPerComponent = 8
 private let imageContextBytesPerPixel = 4
 
 private func compare(_ old: UIImage, _ new: UIImage, precision: Float, perceptualPrecision: Float) -> String? {
+	
+	let lhs = old
+	let rhs = new
+	
+	let size = lhs.size
+	guard size == rhs.size,
+		  let cgImage = lhs.cgImage,
+		  let otherCGImage = rhs.cgImage
+	else {
+		return "Can't render images"
+	}
+
+	guard cgImage.bitsPerPixel == otherCGImage.bitsPerPixel else {
+		return "Different images"
+	}
+
+	let data = cgImage.bytes(size: size)
+	let otherData = otherCGImage.bytes(size: size)
+
+	let bytesPerPixel = cgImage.bitsPerPixel / 8
+	let intWidth = Int(size.width)
+	let intHeight = Int(size.height)
+
+	guard data.count == otherData.count, data.count == intWidth * intHeight * bytesPerPixel else {
+		return "Different images"
+	}
+
+	let differentPixelCount = try? getDifferentPixelCount(
+		lhs: data,
+		rhs: otherData,
+		bytesPerPixel: bytesPerPixel
+	)
+	guard let differentPixelCount else {
+		return "Recieved Error from pixel count method"
+	}
+	
+	let totalPixelCount = Double(cgImage.width * cgImage.height)
+	let pixelRatio = Double(differentPixelCount) / totalPixelCount
+	if 1.0 - pixelRatio >= Double(precision) {
+		return nil
+	} else {
+		return "Actual precision: \(1.0 - pixelRatio) is less than \(precision)"
+	}
+	
+	
+	
+	
   guard let oldCgImage = old.cgImage else {
     return "Reference image could not be loaded."
   }
@@ -134,6 +182,84 @@ private func compare(_ old: UIImage, _ new: UIImage, precision: Float, perceptua
     }
   }
   return nil
+}
+
+enum OperationError: Swift.Error {
+	case someError
+}
+
+private func getDifferentPixelCount(lhs: [UInt8], rhs: [UInt8], bytesPerPixel: Int) throws -> Int {
+	guard lhs.count == rhs.count, lhs.count % bytesPerPixel == 0 else {
+		throw OperationError.someError
+	}
+	guard #available(iOS 14.0, *) else {
+		return try calculateDifferenceWithoutVDSP(lhs: lhs, rhs: rhs, bytesPerPixel: bytesPerPixel)
+	}
+	return try calculateDifferenceWithVDSP(lhs: lhs, rhs: rhs, bytesPerPixel: bytesPerPixel)
+}
+
+enum Specs {
+	static let differentPixelRatio = 0.005
+}
+
+private func calculateDifferenceWithoutVDSP(lhs: [UInt8], rhs: [UInt8], bytesPerPixel: Int) throws -> Int {
+	var count = 0
+	var diff: Double = 0
+	for bytePosition in 0 ..< lhs.count {
+		let componentDiff = Double(lhs[bytePosition]) - Double(rhs[bytePosition])
+		let normalizedComponentDiff = componentDiff / 255.0
+		diff += normalizedComponentDiff * normalizedComponentDiff
+		if bytePosition % bytesPerPixel == bytesPerPixel - 1 {
+			let rootMeanSquare = (diff / Double(bytesPerPixel)).squareRoot()
+			count += rootMeanSquare > Specs.differentPixelRatio ? 1 : 0
+			diff = 0
+		}
+	}
+	return count
+}
+
+@available(iOS 14, *)
+private func calculateDifferenceWithVDSP(lhs: [UInt8], rhs: [UInt8], bytesPerPixel _: Int) throws -> Int {
+	let lhs = vDSP.integerToFloatingPoint(lhs, floatingPointType: Double.self)
+	let rhs = vDSP.integerToFloatingPoint(rhs, floatingPointType: Double.self)
+
+	// Вычисление разницы между каждым пикселем референса и снепшота и получение массива разницы каждого из значений
+	let componentDiff = vDSP.subtract(lhs, rhs)
+	let absoluteDiff = vDSP.absolute(componentDiff)
+	let compressDiff = vDSP.compress(absoluteDiff, gatingVector: absoluteDiff, nonZeroGatingCount: nil)
+	let normalizedDiff = vDSP.divide(compressDiff, 255.0)
+
+	// Подсчет пикселей вышедших за предел допустимой погрешности
+	return normalizedDiff.filter { $0 > Specs.differentPixelRatio }.count
+}
+
+extension CGImage {
+	func bytes(size: CGSize) -> [UInt8] {
+		let integralHeight = Int(size.height)
+		let context = CGContext(
+			data: nil,
+			width: Int(size.width),
+			height: integralHeight,
+			bitsPerComponent: bitsPerComponent,
+			bytesPerRow: bytesPerRow,
+			space: CGColorSpaceCreateDeviceRGB(),
+			bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+		)
+		context?.draw(self, in: CGRect(origin: .zero, size: size))
+		guard let data = context?.data else {
+			return []
+		}
+		let dataPtr = data.assumingMemoryBound(to: UInt8.self)
+		let capacity = bytesPerRow * integralHeight
+		let bytes = Array(UnsafeBufferPointer(start: dataPtr, count: capacity))
+		let realBytesPerRow = Int(size.width) * bitsPerPixel / 8
+		var bytesWithoutPadding = [UInt8]()
+		for bytesRow in 0 ..< integralHeight {
+			let fromIdx = bytesRow * bytesPerRow
+			bytesWithoutPadding.append(contentsOf: bytes[fromIdx ..< (fromIdx + realBytesPerRow)])
+		}
+		return bytesWithoutPadding
+	}
 }
 
 private func context(for cgImage: CGImage, data: UnsafeMutableRawPointer? = nil) -> CGContext? {
